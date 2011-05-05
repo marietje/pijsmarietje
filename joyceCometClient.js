@@ -68,6 +68,12 @@ channel.prototype.on_success = function(data, textStatus, xhr) {
                 this.ready();
 };
 
+channel.prototype.send_messages = function(msgs) {
+        $.merge(this.queue_out, msgs);
+        if(this.token != null)
+                this._request(true);
+};
+
 channel.prototype.send_message = function(data) {
         this.queue_out.push(data);
         if(this.token != null)
