@@ -8,14 +8,21 @@ function PijsMarietje() {
         this.channel_ready = false;
         this.comet = null;
         this.channel = null;
+        this.media = {};
+        this.media_count = 0;
+        this.got_media = false;
+
         this.waiting_for_login_token = false;
         this.waiting_for_welcome = true;
         this.waiting_for_logged_in = false;
+        this.waiting_for_media = 0;
         this.msg_map = {
                 'welcome': this.msg_welcome,
                 'login_token': this.msg_login_token,
                 'logged_in': this.msg_logged_in,
-                'error_login': this.msg_error_login};
+                'error_login': this.msg_error_login,
+                'media': this.msg_media,
+                'media_part': this.msg_media_part};
 }
 
 PijsMarietje.prototype.run = function() {
@@ -39,6 +46,41 @@ PijsMarietje.prototype.setup_joyce = function() {
                 }, 'ready': function() {
                         that.on_channel_ready();
                 }});
+};
+
+PijsMarietje.prototype.msg_media = function(msg) {
+        var that = this;
+        this.media = {};
+        this.media_count = 0;
+        this.waiting_for_media = msg.count;
+        this.got_media = false;
+        $.jGrowl('Receiving media<br/> <span class="media-received">0</span>/' 
+                        + msg.count.toString(), {
+                        sticky: true,
+                        theme: 'media-not',
+                        open: function() {
+                                if(that.got_media) {
+                                        return false;
+                                }
+                        }});
+};
+
+PijsMarietje.prototype.msg_media_part = function(msg) {
+        for(var i = 0; i < msg.part.length; i++) {
+                this.media[msg.part[i].key] = msg.part[i];
+        }
+        this.media_count += msg.part.length;
+        this.waiting_for_media -= msg.part.length;
+        $('.media-received').text(this.media_count);
+        if(this.waiting_for_media == 0) {
+                this.on_got_media();
+        }
+};
+
+PijsMarietje.prototype.on_got_media = function(msg) {
+        this.got_media = true;
+        $('.media-not .jGrowl-close').trigger('click');
+        console.info('Received '+this.media_count.toString()+' media');
 };
 
 PijsMarietje.prototype.msg_login_token = function(msg) {
