@@ -28,11 +28,14 @@ channel.prototype._request = function(interrupt) {
                 this.queue_out = [];
         }
         var url = 'http://'+this.client.host+':'+this.client.port.toString()+
-                        this.client.path+'?m='+ encodeURIComponent(
-                                                JSON.stringify(data));
+                        this.client.path;
         var that = this;
         $.ajax({'jsonp': 'c',
                 'url': url,
+                'type': 'POST',
+                'data': {
+                        'm': JSON.stringify(data)
+                },
                 'dataType': 'jsonp',
                 'error': function(xhr, textStatus, errorThrown) {
                         that.on_error(xhr, textStatus, errorThrown);
