@@ -1,6 +1,7 @@
 (function(){
 
 function PijsMarietje() {
+        this.after_login_cb = null;
         this.uploader = null;
         this.logged_in = false;
         this.login_token = null;
@@ -59,6 +60,8 @@ PijsMarietje.prototype.msg_logged_in = function(msg) {
                 if(this.logged_in)
                         return;
                 this.logged_in = true;
+                if(this.after_login_cb != null)
+                        this.after_login_cb();
         }
 };
 
@@ -130,9 +133,14 @@ PijsMarietje.prototype.setup_ui = function() {
         $('#tabs').tabs({
                 select: function(event, ui) {
                         if(ui.index == 1 && !that.logged_in) {
+                                var tabs = $(this);
+                                that.after_login_cb = function() {
+                                        tabs.tabs('select', 1);
+                                };
                                 that.prepare_login();
                                 return false;
                         }
+                        return true;
                 }
         });
         $( ".tabs-bottom .ui-tabs-nav, .tabs-bottom .ui-tabs-nav > *" )
@@ -156,9 +164,9 @@ PijsMarietje.prototype.setup_ui = function() {
         });
         $('#login-dialog .error-msg').hide();
         $('#login-dialog').keyup(function(e) {
-                f(e.keyCode == 13) {
+                if(e.keyCode == 13) {
                         $(this).dialog('option',
-                                        'buttons')["Login"]();
+                                        'buttons')["Login"].call(this);
                 }
         });
         $("#login-token-dialog").dialog({
