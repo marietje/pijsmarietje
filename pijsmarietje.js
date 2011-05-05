@@ -125,8 +125,9 @@ PijsMarietje.prototype.on_channel_ready = function() {
                 action: this.channel.stream_url});
 
         // Request list of media
-        this.channel.send_message({
-                'type': 'list_media'});
+        this.channel.send_messages([
+                {'type': 'list_media'},
+                {'type': 'list_requests'}]);
 };
 
 PijsMarietje.prototype.prepare_login = function() {
