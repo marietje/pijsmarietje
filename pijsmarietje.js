@@ -13,7 +13,8 @@ function PijsMarietje() {
         this.msg_map = {
                 'welcome': this.msg_welcome,
                 'login_token': this.msg_login_token,
-                'logged_in': this.msg_logged_in};
+                'logged_in': this.msg_logged_in,
+                'error_login': this.msg_error_login};
 }
 
 PijsMarietje.prototype.run = function() {
@@ -58,6 +59,17 @@ PijsMarietje.prototype.msg_logged_in = function(msg) {
                 if(this.logged_in)
                         return;
                 this.logged_in = true;
+        }
+};
+
+
+PijsMarietje.prototype.msg_error_login = function(msg) {
+        if(this.waiting_for_logged_in) {
+                this.waiting_for_logged_in = false;
+                $('#loggingin-dialog').dialog('close');
+                this.prepare_login();
+                $('#login-dialog .error-msg').text(msg.message);
+                $('#login-dialog .error-msg').show();
         }
 };
 
@@ -133,13 +145,20 @@ PijsMarietje.prototype.setup_ui = function() {
                 modal: true,
                 buttons: {
                         "Login": function() {
-                                $('#login-dialog').dialog('close');
+                                $(this).dialog('close');
                                 that.do_login($('#username').val(),
                                                 $('#password').val());
                         },
                         "Cancel": function() {
                                 $(this).dialog("close");
                         }
+                }
+        });
+        $('#login-dialog .error-msg').hide();
+        $('#login-dialog').keyup(function(e) {
+                f(e.keyCode == 13) {
+                        $(this).dialog('option',
+                                        'buttons')["Login"]();
                 }
         });
         $("#login-token-dialog").dialog({
