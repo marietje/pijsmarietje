@@ -103,7 +103,6 @@ PijsMarietje.prototype.setup_joyce = function() {
 
 PijsMarietje.prototype.msg_playing = function(msg) {
         var that = this;
-        console.log(msg);
         this.got_playing = true;
         this.playing = msg.playing;
         this.playing.requestTime = new Date().getTime() / 1000.0;
