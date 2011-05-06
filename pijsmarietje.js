@@ -70,7 +70,6 @@ function PijsMarietje() {
                 'media': this.msg_media,
                 'media_part': this.msg_media_part,
                 'requests': this.msg_requests,
-                'playing_changed': this.msg_playing,
                 'playing': this.msg_playing};
 }
 
@@ -237,11 +236,11 @@ PijsMarietje.prototype.on_channel_ready = function() {
                 element: $('#uploader')[0],
                 action: this.channel.stream_url});
 
-        // Request list of media
+        // Request list of media and follow updates
         this.channel.send_messages([
                 {'type': 'list_media'},
-                {'type': 'list_requests'},
-                {'type': 'get_playing'}]);
+                {'type': 'follow',
+                 'which': ['playing', 'media', 'requests']}])
 };
 
 PijsMarietje.prototype.prepare_login = function() {
