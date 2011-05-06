@@ -11,6 +11,8 @@ function PijsMarietje() {
         this.media = {};
         this.media_count = 0;
         this.got_media = false;
+        this.got_requests = false;
+        this.got_playing = false;
 
         this.waiting_for_login_token = false;
         this.waiting_for_welcome = true;
@@ -22,7 +24,9 @@ function PijsMarietje() {
                 'logged_in': this.msg_logged_in,
                 'error_login': this.msg_error_login,
                 'media': this.msg_media,
-                'media_part': this.msg_media_part};
+                'media_part': this.msg_media_part,
+                'requests': this.msg_requests,
+                'playing': this.msg_playing};
 }
 
 PijsMarietje.prototype.run = function() {
@@ -46,6 +50,12 @@ PijsMarietje.prototype.setup_joyce = function() {
                 }, 'ready': function() {
                         that.on_channel_ready();
                 }});
+};
+
+PijsMarietje.prototype.msg_playing = function(msg) {
+        this.got_playing = true;
+        this.playing = msg.playing;
+        this.refresh_requestsTable();
 };
 
 PijsMarietje.prototype.msg_media = function(msg) {
@@ -81,6 +91,8 @@ PijsMarietje.prototype.on_got_media = function(msg) {
         this.got_media = true;
         $('.media-not .jGrowl-close').trigger('click');
         console.info('Received '+this.media_count.toString()+' media');
+        if(this.got_requests || this.got_playing)
+                this.refresh_requestsTable();
 };
 
 PijsMarietje.prototype.msg_login_token = function(msg) {
@@ -118,6 +130,59 @@ PijsMarietje.prototype.msg_error_login = function(msg) {
         }
 };
 
+PijsMarietje.prototype.msg_requests = function(msg) {
+        this.requests = msg.requests;
+        this.got_requests = true;
+        this.refresh_requestsTable();
+};
+
+PijsMarietje.prototype.create_tr = function(data) {
+        n_tr = document.createElement('tr');
+        for(var i = 0; i < data.length; i++) {
+                n_td = document.createElement('td');
+                n_td.appendChild(document.createTextNode(data[i]));
+                n_tr.appendChild(n_td);
+        }
+        return n_tr;
+};
+
+PijsMarietje.prototype.refresh_requestsTable = function() {
+        $('#requestsTable').empty();
+        this.fill_requestsTable();
+};
+
+PijsMarietje.prototype.fill_requestsTable = function() {
+        var t = $('#requestsTable');
+        var start = (this.got_playing ? -1 : 0);
+        var end = (this.got_requests ? this.requests.length : 0);
+        var ctime = null;
+        for(var i = start; i < end; i++) {
+                var m = (i == -1 ? this.playing.mediaKey
+                                : this.requests[i].mediaKey);
+                var b = (i == -1 ? this.playing.byKey
+                                : this.requests[i].byKey);
+                if(!b)
+                        b = 'marietje';
+                var txt_a = m;
+                var txt_t = '';
+                if(this.got_media) {
+                        txt_a = this.media[m].artist;
+                        txt_a = this.media[m].title;
+                }
+                ctime = (i == -1 ? 0 :
+                                (this.got_media ?
+                                 ctime + this.media[m].length : 0));
+                tr = this.create_tr([b, txt_a, txt_t,
+                                (ctime == null ? '' : ctime)]);
+                $(tr).data('offset', ctime);
+                $('td:eq(0)',tr).addClass('by');
+                $('td:eq(1)',tr).addClass('artist');
+                $('td:eq(2)',tr).addClass('title');
+                $('td:eq(3)',tr).addClass('time');
+                t.append(tr);
+        }
+};
+
 PijsMarietje.prototype.on_channel_ready = function() {
         // Create uploader
         this.uploader = new qq.FileUploader({
@@ -127,7 +192,8 @@ PijsMarietje.prototype.on_channel_ready = function() {
         // Request list of media
         this.channel.send_messages([
                 {'type': 'list_media'},
-                {'type': 'list_requests'}]);
+                {'type': 'list_requests'},
+                {'type': 'get_playing'}]);
 };
 
 PijsMarietje.prototype.prepare_login = function() {
