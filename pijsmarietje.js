@@ -62,11 +62,23 @@ function PijsMarietje() {
         this.waiting_for_welcome = true;
         this.waiting_for_logged_in = false;
         this.waiting_for_media = 0;
+
+
+        this.re_queryCheck = /^[a-z0-9 ]*$/;
+        this.re_queryReplace = /[^a-z0-9 ]/g;
+
+        this.showing_results = false;
+        this.current_query = '';
+        this.scroll_semaphore = 0;
+        this.results_offset = null;
+        this.mainTabShown = true;
+
         this.msg_map = {
                 'welcome': this.msg_welcome,
                 'login_token': this.msg_login_token,
                 'logged_in': this.msg_logged_in,
                 'error_login': this.msg_error_login,
+                'error_request': this.msg_error_request,
                 'media': this.msg_media,
                 'media_part': this.msg_media_part,
                 'requests': this.msg_requests,
@@ -168,6 +180,10 @@ PijsMarietje.prototype.msg_logged_in = function(msg) {
 };
 
 
+PijsMarietje.prototype.msg_error_request = function(msg) {
+        $.jGrowl('Request error: ' + msg['message']);
+};
+
 PijsMarietje.prototype.msg_error_login = function(msg) {
         if(this.waiting_for_logged_in) {
                 this.waiting_for_logged_in = false;
@@ -188,14 +204,94 @@ PijsMarietje.prototype.on_got_media = function(msg) {
         this.got_media = true;
         $('.media-not .jGrowl-close').trigger('click');
         console.info('Received '+this.media_count.toString()+' media');
+        this.qc = {'': []};
+        var i = 0;
+        for(var k in this.media) {
+                var cr = this.re_queryReplace;
+                this.qc[''][i++] = [k,
+                        this.media[k].artist.toLowerCase().replace(cr, '') +'|'+
+                        this.media[k].title.toLowerCase().replace(cr, '')];
+        }
+        console.debug('Initialized query cache');
         if(this.got_requests || this.got_playing)
                 this.refresh_requestsTable();
 };
 
+PijsMarietje.prototype.refresh_resultsTable = function() {
+        var that = this;
+        $('#resultsTable').empty();
+        this.results_offset = 0;
+        this.fill_resultsTable();
+        setTimeout(function() {
+                that.on_scroll();
+        },0);
+};
 
 PijsMarietje.prototype.refresh_requestsTable = function() {
         $('#requestsTable').empty();
         this.fill_requestsTable();
+};
+
+PijsMarietje.prototype.fill_resultsTable = function() {
+        var that = this;
+        var t = $('#resultsTable');
+        var cq = this.current_query;
+        if(!this.got_media)
+                return;
+        this.do_query();
+        var got = 0;
+        for(; this.results_offset < this.qc[cq].length; this.results_offset++) {
+                got += 1;
+                var i = this.results_offset;
+                var m = this.media[this.qc[cq][i][0]];
+                var tr = create_tr([m.artist, m.title]);
+                $(tr).data('key', this.qc[cq][i][0]);
+                $('td:eq(0)',tr).addClass('artist');
+                $('td:eq(0)',tr).addClass('title');
+                $(tr).click(function() {
+                        $('#queryField').val('');
+                        that.check_queryField();
+                        $('queryField').focus();
+                        that.request_media($(this).data('key'));
+                });
+                t.append(tr);
+                if(got == 10)
+                        break;
+        }
+        this.results_offset++;
+};
+
+PijsMarietje.prototype.request_media = function(key) {
+        var that = this;
+        if(!this.logged_in) {
+                that.after_login_cb = function() {
+                        that.request_media(key);
+                };
+                this.prepare_login();
+                return;
+        }
+        this.channel.send_message({
+                type: 'request',
+                mediaKey: key});
+};
+
+PijsMarietje.prototype.do_query = function() {
+        var cq = this.current_query;
+        for(var s = cq.length;
+            !this.qc[cq.slice(0,s)];
+            s--);
+        for(var i = s; i < cq.length; i++) {
+                var from = cq.slice(0, i);
+                var to = cq.slice(0, i+1);
+                var k = 0;
+                this.qc[to] = [];
+                for(var j = 0; j < this.qc[from].length; j++) {
+                        if(this.qc[from][j][1].indexOf(to) != -1) {
+                                this.qc[to][k] = this.qc[from][j];
+                                k++;
+                        }
+                }
+        } 
 };
 
 PijsMarietje.prototype.fill_requestsTable = function() {
@@ -301,6 +397,7 @@ PijsMarietje.prototype.setup_ui = function() {
         // Set up tabs
         $('#tabs').tabs({
                 select: function(event, ui) {
+                        that.mainTabShown = ui.index == 0;
                         if(ui.index == 1 && !that.logged_in) {
                                 var tabs = $(this);
                                 that.after_login_cb = function() {
@@ -354,7 +451,93 @@ PijsMarietje.prototype.setup_ui = function() {
                         return !that.waiting_for_logged_in;
                 }
         });
+
+        // Set up the main tables
+        $('#requestsBar').focus(function() {
+                that.focus_queryField();
+        });
+        $('#queryField').keypress(function(e) {
+                return that.on_queryField_keyPress(e);
+        });
+        $('#queryField').keydown(function(e) {
+                setTimeout(function() {
+                        that.check_queryField();
+                }, 0);
+        });
+        $('#resultsBar').hide();
+        $('#tabsWrapper').scroll(function() {
+                that.on_scroll();
+        });
+        this.focus_queryField();
 }; 
+
+PijsMarietje.prototype.focus_queryField = function() {
+        $('#queryField').focus();
+};
+
+PijsMarietje.prototype.on_queryField_keyPress = function(e) {
+        var that = this;
+        if(e.which == 21) // C-u
+                $('#queryField').val('');
+        setTimeout(function() {
+                that.check_queryField();
+        }, 0);
+};
+
+PijsMarietje.prototype.check_queryField = function() {
+        var that = this;
+        var q = $('#queryField').val();
+        if(!this.re_queryCheck.test(q)) {
+                q = q.toLowerCase().replace(this.re_queryReplace, '');
+                $('#queryField').val(q);
+        }
+        if(q == this.current_query)
+                return;
+        this.current_query = q;
+        _cb = function() { that.up_scroll_semaphore(); };
+        if(q == '' && this.showing_results) {
+                this.down_scroll_semaphore();
+                this.down_scroll_semaphore();
+                $('#resultsBar').hide('fast', _cb);
+                $('#requestsBar').show('fast', _cb);
+                this.showing_results = false;
+        } else if (q != '' && !this.showing_results) {
+                this.down_scroll_semaphore();
+                this.down_scroll_semaphore();
+                $('#resultsBar').show('fast', _cb);
+                $('#requestsBar').hide('fast', _cb);
+                this.showing_results = true;
+        }
+        if(q != '') {
+                this.refresh_resultsTable();
+        }
+};
+
+PijsMarietje.prototype.up_scroll_semaphore = function() {
+        this.scroll_semaphore++;
+        if(this.scroll_semaphore == 0)
+                this.on_scroll();
+};
+
+PijsMarietje.prototype.down_scroll_semaphore = function() {
+        this.scroll_semaphore--;
+};
+
+PijsMarietje.prototype.on_scroll = function() {
+        if(!this.mainTabShown || this.scroll_semaphore != 0
+                        || !this.showing_results)
+                return;
+        var that = this;
+        var diff = $('#tMain').height() -
+                   $('#tabsWrapper').scrollTop() -
+                   $('#tabsWrapper').height();
+        if(diff <= 0) {
+                this.fill_resultsTable();
+                setTimeout(function(){
+                        that.on_scroll();
+                },0);
+        }
+};
 
 $(document).ready(function(){
         var pijsmarietje = new PijsMarietje();

@@ -74,6 +74,27 @@ body {
 #requestsTable .title { width: 40% }
 #requestsTable .time { width: 10% }
 
+#resultsTable .artist { width: 50% }
+#resultsTable .title { width: 50% }
+
+#resultsTable {
+        border-collapse: collapse;
+}
+
+#resultsTable tr:hover {
+        background-color: yellow;
+}
+
 #requestsTable .time {
         text-align: right;
+}
+
+#queryBar {
+        margin-left: 30%;
+        margin-right: 30%;
+}
+
+#queryField {
+        width: 100%;
+        text-align: center;
 }
