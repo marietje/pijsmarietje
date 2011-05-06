@@ -70,6 +70,7 @@ function PijsMarietje() {
                 'media': this.msg_media,
                 'media_part': this.msg_media_part,
                 'requests': this.msg_requests,
+                'playing_changed': this.msg_playing,
                 'playing': this.msg_playing};
 }
 
