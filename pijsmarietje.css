@@ -1,3 +1,6 @@
+/*
+ * UI tweaks to get tabs working
+ */
 body {
         overflow: hidden;
 }
@@ -47,4 +50,30 @@ body {
 }
 .ui-tabs-selected {
         margin-top: -3px !important;
+}
+
+/*
+ * Tables
+ *
+ * Thank you, Rob!  (rbmntjs.nl)
+ */
+#requestsTable,
+#resultsTable {
+        width: 100%;
+        table-layout: fixed;
+}
+.artist,
+.title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+}
+
+#requestsTable .by { width: 10% }
+#requestsTable .artist { width: 40% }
+#requestsTable .title { width: 40% }
+#requestsTable .time { width: 10% }
+
+#requestsTable .time {
+        text-align: right;
 }
