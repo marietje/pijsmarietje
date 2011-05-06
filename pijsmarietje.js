@@ -215,7 +215,7 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 var txt_t = '';
                 if(this.got_media) {
                         txt_a = this.media[m].artist;
-                        txt_a = this.media[m].title;
+                        txt_t = this.media[m].title;
                 }
                 ctime = (i == -1 ? 0 :
                                 (this.got_media ?
