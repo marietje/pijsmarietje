@@ -55,7 +55,7 @@ channel.prototype.on_success = function(data, textStatus, xhr) {
                 this.token = data[0];
                 this.stream_url = 'http://'+this.client.host+':'+
                         this.client.port.toString()+
-                        this.client.path+'?m='+this.token; 
+                        this.client.path+'?m='+this.token+'&r=fu';
                 became_ready = true;
         }
         for(var i = 0; i < data[1].length; i++) {
