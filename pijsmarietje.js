@@ -43,6 +43,7 @@ function nice_time(tmp) {
 //
 function PijsMarietje() {
         this.after_login_cb = null;
+        this.after_login_token_cb = null;
         this.uploader = null;
         this.logged_in = false;
         this.login_token = null;
@@ -79,6 +80,7 @@ function PijsMarietje() {
                 'logged_in': this.msg_logged_in,
                 'error_login': this.msg_error_login,
                 'error_request': this.msg_error_request,
+                'accessKey': this.msg_accessKey,
                 'media': this.msg_media,
                 'media_part': this.msg_media_part,
                 'media_changed': this.msg_media_changed,
@@ -195,10 +197,30 @@ PijsMarietje.prototype.msg_login_token = function(msg) {
         this.on_login_token();
 };
 
+PijsMarietje.prototype.msg_accessKey = function(msg) {
+        this.save_accessKey(this.username, msg['accessKey']);
+};
+
 PijsMarietje.prototype.msg_welcome = function(msg) {
+        var that = this;
         if(this.waiting_for_welcome) {
                 this.waiting_for_welcome = false;
                 $('#welcome-dialog').dialog('close');
+                var tmp = this.get_accessKey();
+                if(tmp != null) {
+                        function _do_ak_login() {
+                                that.do_accessKey_login(tmp[0], tmp[1]);
+                        };
+                        if(this.login_token == null) {
+                                if(this.waiting_for_login_token)
+                                        return;
+                                this.after_login_token_cb = function() {
+                                        _do_ak_login();
+                                };
+                                this.request_login_token();
+                        } else
+                                _do_ak_login();
+                }
         }
 };
 
@@ -209,6 +231,7 @@ PijsMarietje.prototype.msg_logged_in = function(msg) {
                 if(this.logged_in)
                         return;
                 this.logged_in = true;
+                this.save_accessKey(this.username, msg['accessKey']);
                 if(this.after_login_cb != null)
                         this.after_login_cb();
         }
@@ -365,6 +388,18 @@ PijsMarietje.prototype.fill_requestsTable = function() {
         }
 };
 
+PijsMarietje.prototype.get_accessKey = function() {
+        if($.cookie('accessKey'))
+                return [$.cookie('username'),
+                        $.cookie('accessKey')];
+        return null;
+};
+
+PijsMarietje.prototype.save_accessKey = function(username, accessKey) {
+        $.cookie('username', username, { expires: 7 });
+        $.cookie('accessKey', accessKey, { expires: 7 });
+};
+
 PijsMarietje.prototype.on_channel_ready = function() {
         // Create uploader
         this.uploader = new qq.FileUploader({
@@ -378,14 +413,24 @@ PijsMarietje.prototype.on_channel_ready = function() {
                  'which': ['playing', 'media', 'requests']}])
 };
 
+PijsMarietje.prototype.request_login_token = function() {
+        if(this.waiting_for_login_token)
+                return;
+        this.channel.send_message({
+                type: 'request_login_token' });
+        this.waiting_for_login_token = true;
+        $('#login-token-dialog').dialog('open');
+};
+
 PijsMarietje.prototype.prepare_login = function() {
+        var that = this;
         if(this.waiting_for_login_token)
                 return;
         if(this.login_token == null) {
-                this.waiting_for_login_token = true;
-                this.channel.send_message({
-                        type: 'request_login_token' });
-                $('#login-token-dialog').dialog('open');
+                this.after_login_token_cb = function() {
+                        $('#login-dialog').dialog('open');
+                };
+                this.request_login_token();
         } else
                 $('#login-dialog').dialog('open');
 };
@@ -394,12 +439,24 @@ PijsMarietje.prototype.on_login_token = function() {
         if(this.waiting_for_login_token) {
                 this.waiting_for_login_token = false;
                 $('#login-token-dialog').dialog('close');
-                $('#login-dialog').dialog('open');
+                if(this.after_login_token_cb != null)
+                        this.after_login_token_cb();
         }
 };
 
+PijsMarietje.prototype.do_accessKey_login = function(username, accessKey) {
+        var hash = md5(accessKey + this.login_token);
+        this.waiting_for_logged_in = true;
+        $('#loggingin-dialog').dialog('open');
+        this.channel.send_message({
+                'type': 'login_accessKey',
+                'username': username,
+                'hash': hash});
+}
+
 PijsMarietje.prototype.do_login = function(username, password) {
         var hash = md5(md5(password) + this.login_token);
+        this.username = username;
         this.waiting_for_logged_in = true;
         $('#loggingin-dialog').dialog('open');
         this.channel.send_message({
