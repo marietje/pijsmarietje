@@ -79,6 +79,7 @@ function PijsMarietje() {
                 'login_token': this.msg_login_token,
                 'logged_in': this.msg_logged_in,
                 'error_login': this.msg_error_login,
+                'error_login_accessKey': this.msg_error_login,
                 'error_request': this.msg_error_request,
                 'accessKey': this.msg_accessKey,
                 'media': this.msg_media,
