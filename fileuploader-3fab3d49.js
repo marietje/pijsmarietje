@@ -614,12 +614,12 @@ qq.extend(qq.FileUploader.prototype, {
         var item = this._getItemByFileId(id);                
         qq.remove(this._find(item, 'cancel'));
         qq.remove(this._find(item, 'spinner'));
-        // TODO dirty hack -- report every upload as succesfull
-        //if (result.success){
+        
+        if (result.success){
             qq.addClass(item, this._classes.success);    
-        //} else {
-        //    qq.addClass(item, this._classes.fail);
-        //}         
+        } else {
+            qq.addClass(item, this._classes.fail);
+        }         
     },
     _addToList: function(id, fileName){
         var item = qq.toElement(this._options.fileTemplate);                
