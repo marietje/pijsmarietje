@@ -81,6 +81,7 @@ function PijsMarietje() {
                 'error_request': this.msg_error_request,
                 'media': this.msg_media,
                 'media_part': this.msg_media_part,
+                'media_changed': this.msg_media_changed,
                 'requests': this.msg_requests,
                 'playing': this.msg_playing};
 }
@@ -130,6 +131,11 @@ PijsMarietje.prototype.msg_media = function(msg) {
         var that = this;
         this.media = {};
         this.media_count = 0;
+        if(msg.count == 0) {
+                this.got_media = true;
+                this.on_got_media();
+                return;
+        }
         this.waiting_for_media = msg.count;
         this.got_media = false;
         $.jGrowl('Receiving media<br/> <span class="media-received">0</span>/' 
@@ -141,6 +147,35 @@ PijsMarietje.prototype.msg_media = function(msg) {
                                         return false;
                                 }
                         }});
+};
+
+PijsMarietje.prototype.msg_media_changed = function(msg) {
+        if(msg.changes == null) {
+                $.jGrowl('Collection changed. Requesting changes.');
+                this.channel.send_message({
+                        'type': 'list_media'});
+                return;
+        }
+        for(var i = 0; i < msg.changes.added.length; i++) {
+                this.media[msg.changes.added[i].key] = msg.changes.added[i];
+                $.jGrowl(msg.changes.added[i].artist + ' - ' +
+                                msg.changes.added[i].title +
+                                ' was added to the collection');
+        }
+        for(var i = 0; i < msg.changes.updated.length; i++) {
+                this.media[msg.changes.updated[i].key] = msg.changes.updated[i];
+                $.jGrowl(msg.changes.updated[i].artist + ' - ' +
+                                msg.changes.updated[i].title +
+                                ' was updated');
+        }
+        for(var i = 0; i < msg.changes.removed.length; i++) {
+                $.jGrowl(msg.changes.removed[i].artist + ' - ' +
+                                msg.changes.removed[i].title +
+                                ' was removed');
+                delete this.media[msg.changes.removed[i].key];
+        }
+        // TODO Update the queryCache incrementally
+        this.reset_queryCache();
 };
 
 PijsMarietje.prototype.msg_media_part = function(msg) {
@@ -200,10 +235,7 @@ PijsMarietje.prototype.msg_requests = function(msg) {
         this.refresh_requestsTable();
 };
 
-PijsMarietje.prototype.on_got_media = function(msg) {
-        this.got_media = true;
-        $('.media-not .jGrowl-close').trigger('click');
-        console.info('Received '+this.media_count.toString()+' media');
+PijsMarietje.prototype.reset_queryCache = function() {
         this.qc = {'': []};
         var i = 0;
         for(var k in this.media) {
@@ -213,6 +245,13 @@ PijsMarietje.prototype.on_got_media = function(msg) {
                         this.media[k].title.toLowerCase().replace(cr, '')];
         }
         console.debug('Initialized query cache');
+};
+
+PijsMarietje.prototype.on_got_media = function(msg) {
+        this.got_media = true;
+        $('.media-not .jGrowl-close').trigger('click');
+        console.info('Received '+this.media_count.toString()+' media');
+        this.reset_queryCache();
         if(this.got_requests || this.got_playing)
                 this.refresh_requestsTable();
 };
