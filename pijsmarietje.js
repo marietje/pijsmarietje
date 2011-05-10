@@ -74,6 +74,10 @@ function PijsMarietje() {
         this.results_offset = null;
         this.mainTabShown = true;
 
+        this.showing_requestsToolbox = false;
+        this.mouse_on_requestsToolbox = false;
+        this.mouse_on_requestsBar = false;
+
         this.msg_map = {
                 'welcome': this.msg_welcome,
                 'login_token': this.msg_login_token,
@@ -358,6 +362,7 @@ PijsMarietje.prototype.do_query = function() {
 };
 
 PijsMarietje.prototype.fill_requestsTable = function() {
+        var that = this;
         var t = $('#requestsTable');
         var start = (this.got_playing ? -1 : 0);
         var end = (this.got_requests ? this.requests.length : 0);
@@ -385,6 +390,20 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 $('td:eq(1)',tr).addClass('artist');
                 $('td:eq(2)',tr).addClass('title');
                 $('td:eq(3)',tr).addClass('time');
+                $(tr).mouseenter(function(event) {
+                        if(!that.showing_requestsToolbox) {
+                                that.showing_requestsToolbox = true;
+                                $('#requestsToolbox').show();
+                        }
+                        $('#requestsToolbox').css({
+                                'top': $(this).position().top
+                                        + .5 * ($(this).height()
+                                        - $('#requestsToolbox').height()),
+                                'left': $(this).position().left
+                                        + $(this).width()
+                                        - $('#requestsToolbox').width()
+                        }, 'fast');
+                });
                 t.append(tr);
         }
 };
@@ -565,8 +584,47 @@ PijsMarietje.prototype.setup_ui = function() {
         $('#tabsWrapper').scroll(function() {
                 that.on_scroll();
         });
+
+        // Button
+        $('#requestsToolbox > .up').button(
+                        { icons: { primary: 'ui-icon-circle-arrow-n'},
+                          text: false })
+        $('#requestsToolbox > .down').button(
+                        { icons: { primary: 'ui-icon-circle-arrow-s'},
+                          text: false })
+        $('#requestsToolbox > .del').button(
+                        { icons: { primary: 'ui-icon-circle-close' },
+                          text: false })
+        $('#requestsToolbox').mouseenter(function(event){
+                that.mouse_on_requestsToolbox = true;
+        });
+        $('#requestsToolbox').mouseleave(function(event){
+                that.mouse_on_requestsToolbox = false;
+                setTimeout(function() {
+                        if(!that.mouse_on_requestsBar) {
+                                that.hide_requestsToolbox();
+                        }
+                },0);
+        });
+        $('#requestsBar').mouseenter(function(event){
+                that.mouse_on_requestsBar = true;
+        });
+        $('#requestsBar').mouseleave(function(event){
+                that.mouse_on_requestsBar = false;
+                setTimeout(function() {
+                        if(!that.mouse_on_requestsToolbox) {
+                                that.hide_requestsToolbox();
+                        }
+                },0);
+        });
+
         this.focus_queryField();
 }; 
+
+PijsMarietje.prototype.hide_requestsToolbox = function() {
+        $('#requestsToolbox').hide();
+        this.showing_requestsToolbox = false;
+};
 
 PijsMarietje.prototype.focus_queryField = function() {
         $('#queryField').focus();
