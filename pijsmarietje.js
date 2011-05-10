@@ -435,6 +435,7 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 });
                 t.append(tr);
         }
+        this.update_times();
 };
 
 PijsMarietje.prototype.get_accessKey = function() {
