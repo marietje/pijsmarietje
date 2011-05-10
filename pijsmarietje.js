@@ -82,6 +82,7 @@ function PijsMarietje() {
                 'welcome': this.msg_welcome,
                 'login_token': this.msg_login_token,
                 'logged_in': this.msg_logged_in,
+                'error': this.msg_error,
                 'error_login': this.msg_error_login,
                 'error_login_accessKey': this.msg_error_login,
                 'error_request': this.msg_error_request,
@@ -119,6 +120,10 @@ PijsMarietje.prototype.setup_joyce = function() {
 //
 // Message handlers
 //
+
+PijsMarietje.prototype.msg_error = function(msg) {
+        $.jGrowl("Error: " + msg['message']);
+}
 
 PijsMarietje.prototype.msg_playing = function(msg) {
         var that = this;
