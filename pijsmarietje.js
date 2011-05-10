@@ -77,6 +77,7 @@ function PijsMarietje() {
         this.showing_requestsToolbox = false;
         this.mouse_on_requestsToolbox = false;
         this.mouse_on_requestsBar = false;
+        this.requestsToolbox_key = null;
 
         this.msg_map = {
                 'welcome': this.msg_welcome,
@@ -391,6 +392,10 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 tr = create_tr([b, txt_a, txt_t,
                                 (ctime == null ? '' : ctime)]);
                 $(tr).data('offset', ctime);
+                if(i == -1)
+                        $(tr).data('key', null);
+                else
+                        $(tr).data('key', this.requests[i].key);
                 $('td:eq(0)',tr).addClass('by');
                 $('td:eq(1)',tr).addClass('artist');
                 $('td:eq(2)',tr).addClass('title');
@@ -408,6 +413,7 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                                         + $(this).width()
                                         - $('#requestsToolbox').width()
                         }, 'fast');
+                        that.requestsToolbox_key = $(this).data('key');
                 });
                 t.append(tr);
         }
@@ -593,13 +599,31 @@ PijsMarietje.prototype.setup_ui = function() {
         // Button
         $('#requestsToolbox > .up').button(
                         { icons: { primary: 'ui-icon-circle-arrow-n'},
-                          text: false })
+                          text: false }).click(function(){
+                that.channel.send_message({
+                        'type': 'move_request',
+                        'amount': -1,
+                        'key': that.requestsToolbox_key
+                });
+        });
         $('#requestsToolbox > .down').button(
                         { icons: { primary: 'ui-icon-circle-arrow-s'},
-                          text: false })
+                          text: false }).click(function(){
+                that.channel.send_message({
+                        'type': 'move_request',
+                        'amount': 1,
+                        'key': that.requestsToolbox_key
+                });
+        });
         $('#requestsToolbox > .del').button(
                         { icons: { primary: 'ui-icon-circle-close' },
-                          text: false })
+                          text: false }).click(function(){
+                that.channel.send_message({
+                        'type': 'cancel_request',
+                        'key': that.requestsToolbox_key
+                });
+        });
+
         $('#requestsToolbox').mouseenter(function(event){
                 that.mouse_on_requestsToolbox = true;
         });
@@ -629,6 +653,7 @@ PijsMarietje.prototype.setup_ui = function() {
 PijsMarietje.prototype.hide_requestsToolbox = function() {
         $('#requestsToolbox').hide();
         this.showing_requestsToolbox = false;
+        this.requestsToolbox_key = null;
 };
 
 PijsMarietje.prototype.focus_queryField = function() {
@@ -700,7 +725,7 @@ PijsMarietje.prototype.on_scroll = function() {
 };
 
 $(document).ready(function(){
-        var pijsmarietje = new PijsMarietje();
+        pijsmarietje = new PijsMarietje();
         pijsmarietje.run();
 });
 
