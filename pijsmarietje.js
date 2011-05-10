@@ -78,6 +78,7 @@ function PijsMarietje() {
         this.mouse_on_requestsToolbox = false;
         this.mouse_on_requestsBar = false;
         this.requestsToolbox_key = null;
+        this.requestsToolbox_over_playing = false;
 
         this.msg_map = {
                 'welcome': this.msg_welcome,
@@ -401,6 +402,21 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 $('td:eq(2)',tr).addClass('title');
                 $('td:eq(3)',tr).addClass('time');
                 $(tr).mouseenter(function(event) {
+                        if($(this).data('key') == null
+                                        && !that.requestsToolbox_over_playing) {
+                                $('#requestsToolbox > .up').hide();
+                                $('#requestsToolbox > .down').hide();
+                                $('#requestsToolbox > .del').hide();
+                                $('#requestsToolbox > .skip').show();
+                                that.requestsToolbox_over_playing = true;
+                        } else if ($(this).data('key') != null  &&
+                                        that.requestsToolbox_over_playing) {
+                                $('#requestsToolbox > .up').show();
+                                $('#requestsToolbox > .down').show();
+                                $('#requestsToolbox > .del').show();
+                                $('#requestsToolbox > .skip').hide();
+                                that.requestsToolbox_over_playing = false;
+                        }
                         if(!that.showing_requestsToolbox) {
                                 that.showing_requestsToolbox = true;
                                 $('#requestsToolbox').show();
@@ -408,11 +424,13 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                         $('#requestsToolbox').css({
                                 'top': $(this).position().top
                                         + .5 * ($(this).height()
-                                        - $('#requestsToolbox').height()),
+                                        - 2*$('#requestsToolbox').height()
+                                        + $('#requestsToolbox > .up').height()),
                                 'left': $(this).position().left
                                         + $(this).width()
                                         - $('#requestsToolbox').width()
                         }, 'fast');
+                        console.log($(this).position().left + $(this).width());
                         that.requestsToolbox_key = $(this).data('key');
                 });
                 t.append(tr);
@@ -622,6 +640,13 @@ PijsMarietje.prototype.setup_ui = function() {
                         'key': that.requestsToolbox_key
                 });
         });
+        $('#requestsToolbox > .skip').button(
+                        { icons: { primary: 'ui-icon-seek-next' },
+                          text: false }).click(function(){
+                that.channel.send_message({
+                        'type': 'skip_playing'
+                });
+        }).hide();
 
         $('#requestsToolbox').mouseenter(function(event){
                 that.mouse_on_requestsToolbox = true;
@@ -645,6 +670,7 @@ PijsMarietje.prototype.setup_ui = function() {
                         }
                 },0);
         });
+        $('#requestsToolbox').hide();
 
         this.focus_queryField();
 }; 
