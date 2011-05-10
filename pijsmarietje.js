@@ -439,7 +439,6 @@ PijsMarietje.prototype.on_channel_ready = function() {
 
         // Request list of media and follow updates
         this.channel.send_messages([
-                {'type': 'list_media'},
                 {'type': 'follow',
                  'which': ['playing', 'media', 'requests']}])
 };
