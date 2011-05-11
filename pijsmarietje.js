@@ -1,5 +1,18 @@
 (function(){
 
+if(typeof Function.empty == 'undefined')
+        Function.empty = function(){};
+
+if(typeof console == 'undefined')
+        console = {
+                'log': Function.empty,
+                'debug': Function.empty,
+                'info': Function.empty,
+                'warn': Function.empty,
+                'error': Function.empty,
+                'assert': Function.empty
+        };
+
 //
 // Misc utility functions
 //
