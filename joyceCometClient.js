@@ -30,13 +30,12 @@ channel.prototype._request = function(interrupt) {
         var url = 'http://'+this.client.host+':'+this.client.port.toString()+
                         this.client.path;
         var that = this;
-        $.ajax({'jsonp': 'c',
-                'url': url,
+        $.ajax({'url': url,
                 'type': 'POST',
                 'data': {
                         'm': JSON.stringify(data)
                 },
-                'dataType': 'jsonp',
+                'dataType': 'json',
                 'error': function(xhr, textStatus, errorThrown) {
                         that.on_error(xhr, textStatus, errorThrown);
                 }, 'success': function(data, textStatus, xhr) {
