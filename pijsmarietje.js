@@ -116,8 +116,7 @@ PijsMarietje.prototype.run = function() {
 
 PijsMarietje.prototype.setup_joyce = function() {
         var that = this;
-        this.comet = new joyceCometClient({
-                'host': '192.168.1.3'});
+        this.comet = new joyceCometClient(pijsmarietje_config.server);
 
         this.channel = this.comet.create_channel({
                 'message': function(msg) {
