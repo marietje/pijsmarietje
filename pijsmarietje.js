@@ -395,7 +395,7 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                         b = 'marietje';
                 var txt_a = m;
                 var txt_t = '';
-                if(this.got_media) {
+                if(this.got_media && m) {
                         txt_a = this.media[m].artist;
                         txt_t = this.media[m].title;
                 }
