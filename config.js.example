@@ -1,0 +1,6 @@
+var pijsmarietje_config = {
+    server: {
+        host: 'my.domain.name',
+        port: 8080
+    }
+};
