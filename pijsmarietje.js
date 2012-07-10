@@ -342,7 +342,6 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                                         + $(this).width()
                                         - $('#requestsToolbox').width()
                         }, 'fast');
-                        console.log($(this).position().left + $(this).width());
                         that.requestsToolbox_key = $(this).data('key');
                 });
                 t.append(tr);
