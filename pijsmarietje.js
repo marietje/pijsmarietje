@@ -654,7 +654,7 @@ PijsMarietje.prototype.on_scroll = function() {
                    $('#tabsWrapper').scrollTop() -
                    $('#tabsWrapper').height();
         if(diff <= 0) {
-                if(this.qm_has_more_results || !this.qm_request_outstanding)
+                if(this.qm_has_more_results && !this.qm_request_outstanding)
                         this.qm_request_more_results();
         }
 };
