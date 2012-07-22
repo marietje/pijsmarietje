@@ -230,7 +230,7 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
                 var tr = create_tr([m.artist, m.title]);
                 $(tr).data('key', m.key);
                 $('td:eq(0)',tr).addClass('artist');
-                $('td:eq(0)',tr).addClass('title');
+                $('td:eq(1)',tr).addClass('title');
                 $(tr).click(function() {
                         $('#queryField').val('');
                         that.check_queryField();
