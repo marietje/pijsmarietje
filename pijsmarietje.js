@@ -239,8 +239,11 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
                 });
                 t.append(tr);
         }
-        if (msg.results.length != this.qm_results_requested)
+        if (msg.results.length != this.qm_results_requested) {
                 this.qm_has_more_results = false;
+                /* Add the fleuron */
+                t.append($("<tr><td colspan='2' class='fleuron'>l</td></tr>"));
+        }
         this.qm_request_outstanding = false;
         setTimeout(function() {
                 that.on_scroll();

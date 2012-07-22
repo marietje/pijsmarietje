@@ -1,3 +1,8 @@
+@font-face {
+        font-family: Pijsmarietje;
+        src: url("pijsmarietje.woff");
+}
+
 /*
  * UI tweaks to get tabs working
  */
@@ -67,6 +72,13 @@ body {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+}
+
+.fleuron {
+        text-align: center;
+        font-family: Pijsmarietje;
+        font-size: 48pt;
+        padding-top: 15pt;
 }
 
 #requestsTable .by { width: 10% }
