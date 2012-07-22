@@ -224,6 +224,7 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
         if(msg['token'] != this.qm_token)
                 return;
         var t = $('#resultsTable');
+        $('.loading', t).remove();
         this.qm_results_offset += msg.results.length;
         for(var i = 0; i < msg.results.length; i++) {
                 var m = msg.results[i];
@@ -273,6 +274,8 @@ PijsMarietje.prototype.qm_request_more_results = function() {
                                    token: ++this.qm_token,
                                    skip: this.qm_results_offset,
                                    count: this.qm_results_requested})
+        $('#resultsTable').append($(
+                        '<tr><td colspan="2" class="loading"></td></tr>'));
 };
 
 PijsMarietje.prototype.request_media = function(key) {

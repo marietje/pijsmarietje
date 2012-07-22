@@ -81,6 +81,13 @@ body {
         padding-top: 15pt;
 }
 
+.loading {
+        background-image: url('loading.gif');
+        background-repeat: no-repeat;
+        background-position: bottom center;
+        height: 50px;
+}
+
 #requestsTable .by { width: 10% }
 #requestsTable .artist { width: 40% }
 #requestsTable .title { width: 40% }
