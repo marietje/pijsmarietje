@@ -482,10 +482,10 @@ PijsMarietje.prototype.setup_ui = function() {
         $('#tabs').tabs({
                 select: function(event, ui) {
                         that.mainTabShown = ui.index == 0;
-                        if(ui.index == 1 && !that.logged_in) {
+                        if(ui.panel.id == "tUpload" && !that.logged_in) {
                                 var tabs = $(this);
                                 that.after_login_cb = function() {
-                                        tabs.tabs('select', 1);
+                                        tabs.tabs('select', "tUpload");
                                 };
                                 that.prepare_login();
                                 return false;
