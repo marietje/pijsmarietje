@@ -170,6 +170,7 @@ PijsMarietje.prototype.msg_welcome = function(msg) {
         if(this.waiting_for_welcome) {
                 this.waiting_for_welcome = false;
                 $('#welcome-dialog').dialog('close');
+                this.focus_queryField();
                 var tmp = this.get_accessKey();
                 if(tmp != null) {
                         function _do_ak_login() {
@@ -192,6 +193,7 @@ PijsMarietje.prototype.msg_logged_in = function(msg) {
         if(this.waiting_for_logged_in) {
                 this.waiting_for_logged_in = false;
                 $('#loggingin-dialog').dialog('close');
+                this.focus_queryField();
                 if(this.logged_in)
                         return;
                 this.logged_in = true;
@@ -210,6 +212,7 @@ PijsMarietje.prototype.msg_error_login = function(msg) {
         if(this.waiting_for_logged_in) {
                 this.waiting_for_logged_in = false;
                 $('#loggingin-dialog').dialog('close');
+                this.focus_queryField();
                 this.prepare_login();
                 $('#login-dialog .error-msg').text(msg.message);
                 $('#login-dialog .error-msg').show();
@@ -243,7 +246,7 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
                 $(tr).click(function() {
                         $('#queryField').val('');
                         that.check_queryField();
-                        $('queryField').focus();
+                        that.focus_queryField();
                         that.request_media($(this).data('key'));
                 });
                 t.append(tr);
@@ -427,6 +430,7 @@ PijsMarietje.prototype.on_login_token = function() {
         if(this.waiting_for_login_token) {
                 this.waiting_for_login_token = false;
                 $('#login-token-dialog').dialog('close');
+                this.focus_queryField();
                 if(this.after_login_token_cb != null)
                         this.after_login_token_cb();
         }
@@ -489,6 +493,8 @@ PijsMarietje.prototype.setup_ui = function() {
                                 };
                                 that.prepare_login();
                                 return false;
+                        } else if (ui.panel.id == "tMain") {
+                                that.focus_queryField();
                         }
                         return true;
                 }
@@ -504,11 +510,13 @@ PijsMarietje.prototype.setup_ui = function() {
                 buttons: {
                         "Login": function() {
                                 $(this).dialog('close');
+                                that.focus_queryField();
                                 that.do_login($('#username').val(),
                                                 $('#password').val());
                         },
                         "Cancel": function() {
                                 $(this).dialog("close");
+                                that.focus_queryField();
                         }
                 }
         });
@@ -537,9 +545,6 @@ PijsMarietje.prototype.setup_ui = function() {
         });
 
         // Set up the main tables
-        $('#requestsBar').focus(function() {
-                that.focus_queryField();
-        });
         $('#queryField').keypress(function(e) {
                 return that.on_queryField_keyPress(e);
         });
@@ -589,8 +594,7 @@ PijsMarietje.prototype.setup_ui = function() {
         }).hide();
 
         this.rtb_hide(true);
-
-        this.focus_queryField();
+        that.focus_queryField();
 }; 
 
 PijsMarietje.prototype.rtb_hide = function(immediately) {
@@ -608,7 +612,9 @@ PijsMarietje.prototype.rtb_hide = function(immediately) {
 };
 
 PijsMarietje.prototype.focus_queryField = function() {
-        $('#queryField').focus();
+        setTimeout(function() {
+                $('#queryField').focus();
+        }, 0);
 };
 
 PijsMarietje.prototype.on_queryField_keyPress = function(e) {
