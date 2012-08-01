@@ -91,11 +91,12 @@ function PijsMarietje() {
         this.scroll_semaphore = 0;
         this.mainTabShown = true;
 
-        this.showing_requestsToolbox = false;
-        this.mouse_on_requestsToolbox = false;
-        this.mouse_on_requestsBar = false;
-        this.requestsToolbox_key = null;
-        this.requestsToolbox_over_playing = false;
+        // requestsToolbox
+        this.rtb_el = $('#requestsToolbox');
+        this.rtb_key = null;
+        this.rtb_visible = true;
+        this.rtb_over_playing = false;
+        this.rtb_hideTimeout = null;
 
         this.msg_map = {
                 'welcome': this.msg_welcome,
@@ -278,6 +279,10 @@ PijsMarietje.prototype.qm_initial_request = function() {
 };
 
 PijsMarietje.prototype.refresh_requestsTable = function() {
+        // When we hide the requestsToolbox, it is detached from the DOM.
+        // If we do not do this, the .empty() call will clear the jQuery
+        // data on the requestsToolbox and break the buttons.
+        this.rtb_hide(true);
         $('#requestsTable').empty();
         this.fill_requestsTable();
 };
@@ -335,36 +340,37 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 $('td:eq(1)',tr).addClass('artist');
                 $('td:eq(2)',tr).addClass('title');
                 $('td:eq(3)',tr).addClass('time');
-                $(tr).mouseenter(function(event) {
+                $(tr).hover(function(event) {
                         if($(this).data('key') == null
-                                        && !that.requestsToolbox_over_playing) {
-                                $('#requestsToolbox > .up').hide();
-                                $('#requestsToolbox > .down').hide();
-                                $('#requestsToolbox > .del').hide();
-                                $('#requestsToolbox > .skip').show();
-                                that.requestsToolbox_over_playing = true;
+                                        && !that.rtb_over_playing) {
+                                $('.up', that.rtb_el).hide();
+                                $('.down', that.rtb_el).hide();
+                                $('.del', that.rtb_el).hide();
+                                $('.skip', that.rtb_el).show();
+                                that.rtb_over_playing = true;
                         } else if ($(this).data('key') != null  &&
-                                        that.requestsToolbox_over_playing) {
-                                $('#requestsToolbox > .up').show();
-                                $('#requestsToolbox > .down').show();
-                                $('#requestsToolbox > .del').show();
-                                $('#requestsToolbox > .skip').hide();
-                                that.requestsToolbox_over_playing = false;
+                                        that.rtb_over_playing) {
+                                $('.up', that.rtb_el).show();
+                                $('.down', that.rtb_el).show();
+                                $('.del', that.rtb_el).show();
+                                $('.skip', that.rtb_el).hide();
+                                that.rtb_over_playing = false;
                         }
-                        if(!that.showing_requestsToolbox) {
-                                that.showing_requestsToolbox = true;
-                                $('#requestsToolbox').show();
+                        if(!that.rtb_visible) {
+                                that.rtb_visible = true;
+                                that.rtb_el.show();
                         }
-                        $('#requestsToolbox').css({
-                                'top': $(this).position().top
-                                        + .5 * ($(this).height()
-                                        - 2*$('#requestsToolbox').height()
-                                        + $('#requestsToolbox > .up').height()),
-                                'left': $(this).position().left
-                                        + $(this).width()
-                                        - $('#requestsToolbox').width()
-                        }, 'fast');
-                        that.requestsToolbox_key = $(this).data('key');
+                        /* We need to put the toolbox somewhere in the row,
+                         * otherwise a mouseenter on the toolbox will not
+                         * propogate to the tr. */
+                        that.rtb_el.detach().prependTo($('.artist', this));
+                        if(that.rtb_hideTimeout) {
+                                clearTimeout(that.rtb_hideTimeout);
+                                that.rtb_hideTimeout = null;
+                        }
+                        that.rtb_key = $(this).data('key');
+                }, function() {
+                        that.rtb_hide();
                 });
                 t.append(tr);
         }
@@ -548,33 +554,33 @@ PijsMarietje.prototype.setup_ui = function() {
         });
 
         // Button
-        $('#requestsToolbox > .up').button(
+        $('.up', that.rtb_el).button(
                         { icons: { primary: 'ui-icon-circle-arrow-n'},
                           text: false }).click(function(){
                 that.channel.send_message({
                         'type': 'move_request',
                         'amount': -1,
-                        'key': that.requestsToolbox_key
+                        'key': that.rtb_key
                 });
         });
-        $('#requestsToolbox > .down').button(
+        $('.down', that.rtb_el).button(
                         { icons: { primary: 'ui-icon-circle-arrow-s'},
                           text: false }).click(function(){
                 that.channel.send_message({
                         'type': 'move_request',
                         'amount': 1,
-                        'key': that.requestsToolbox_key
+                        'key': that.rtb_key
                 });
         });
-        $('#requestsToolbox > .del').button(
+        $('.del', that.rtb_el).button(
                         { icons: { primary: 'ui-icon-circle-close' },
                           text: false }).click(function(){
                 that.channel.send_message({
                         'type': 'cancel_request',
-                        'key': that.requestsToolbox_key
+                        'key': that.rtb_key
                 });
         });
-        $('#requestsToolbox > .skip').button(
+        $('.skip', that.rtb_el).button(
                         { icons: { primary: 'ui-icon-seek-next' },
                           text: false }).click(function(){
                 that.channel.send_message({
@@ -582,37 +588,23 @@ PijsMarietje.prototype.setup_ui = function() {
                 });
         }).hide();
 
-        $('#requestsToolbox').mouseenter(function(event){
-                that.mouse_on_requestsToolbox = true;
-        });
-        $('#requestsToolbox').mouseleave(function(event){
-                that.mouse_on_requestsToolbox = false;
-                setTimeout(function() {
-                        if(!that.mouse_on_requestsBar) {
-                                that.hide_requestsToolbox();
-                        }
-                },0);
-        });
-        $('#requestsBar').mouseenter(function(event){
-                that.mouse_on_requestsBar = true;
-        });
-        $('#requestsBar').mouseleave(function(event){
-                that.mouse_on_requestsBar = false;
-                setTimeout(function() {
-                        if(!that.mouse_on_requestsToolbox) {
-                                that.hide_requestsToolbox();
-                        }
-                },0);
-        });
-        $('#requestsToolbox').hide();
+        this.rtb_hide(true);
 
         this.focus_queryField();
 }; 
 
-PijsMarietje.prototype.hide_requestsToolbox = function() {
-        $('#requestsToolbox').hide();
-        this.showing_requestsToolbox = false;
-        this.requestsToolbox_key = null;
+PijsMarietje.prototype.rtb_hide = function(immediately) {
+        var that = this;
+        if(immediately) {
+                that.rtb_el.detach().hide();
+                that.rtb_visible = false;
+                that.rtb_key = null;
+                return;
+        }
+        this.rtb_hideTimeout = setTimeout(function() {
+                that.rtb_hideTimeout = null;
+                that.rtb_hide(true);
+        }, 200);
 };
 
 PijsMarietje.prototype.focus_queryField = function() {

@@ -21,6 +21,10 @@ body {
         margin-bottom: 0;
 }
 
+#tMain {
+        padding: 15px 20px;
+}
+
 #tabsWrapper {
         position: absolute !important;
         bottom: 44px;
@@ -126,5 +130,7 @@ body {
         white-space: nowrap;
         z-index: 10;
         padding: 1px 1px;
-        font-size: 62.5%
+        font-size: 62.5%;
+        right: 20px;
+        margin-top: -3px;
 }
