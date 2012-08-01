@@ -238,6 +238,8 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
                 this.qm_initial_request();
                 return;
         }
+        if(this.qm_current_query == '')
+                return;
         // If this is the first batch of results, we record the query
         // in the query history.
         if(this.qm_results_offset == 0)
