@@ -78,13 +78,15 @@ function PijsMarietje() {
         this.re_queryCheck = /^[a-z0-9 ]*$/;
         this.re_queryReplace = /[^a-z0-9 ]/g;
 
+        /* State for the media queries */
         this.qm_showing_results = false;
         this.qm_current_query = '';
         this.qm_results_offset = null;
         this.qm_token = 0;
-        this.qm_results_requested = 10;
+        this.qm_results_requested = 20;
         this.qm_has_more_results = true;
         this.qm_request_outstanding = false;
+        this.qm_has_delayed_query = false;
 
         this.scroll_semaphore = 0;
         this.mainTabShown = true;
@@ -223,6 +225,11 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
         var that = this;
         if(msg['token'] != this.qm_token)
                 return;
+        // Has the user already issues a new query?
+        if(this.qm_has_delayed_query) {
+                this.qm_initial_request();
+                return;
+        }
         var t = $('#resultsTable');
         $('.loading', t).remove();
         this.qm_results_offset += msg.results.length;
@@ -254,9 +261,19 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
 PijsMarietje.prototype.refresh_resultsTable = function() {
         var that = this;
         $('#resultsTable').empty();
-        this.qm_results_offset = 0;
+        if(this.qm_request_outstanding)
+                // If there is already a query oustanding, we wait for it
+                // and queue the new query.
+                this.qm_has_delayed_query = true;
+        else
+                this.qm_initial_request();
+};
+
+PijsMarietje.prototype.qm_initial_request = function() {
         this.qm_has_more_results = true;
+        this.qm_results_offset = 0;
         this.qm_request_outstanding = false;
+        this.qm_has_delayed_query = false;
         this.qm_request_more_results();
 };
 
@@ -267,7 +284,6 @@ PijsMarietje.prototype.refresh_requestsTable = function() {
 
 PijsMarietje.prototype.qm_request_more_results = function() {
         var that = this;
-        this.qm_results_requested = 20;
         this.qm_request_outstanding = true;
         this.channel.send_message({type: 'query_media',
                                    query: this.qm_current_query,
