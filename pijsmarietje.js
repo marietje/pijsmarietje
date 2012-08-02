@@ -233,17 +233,16 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
         var that = this;
         if(msg['token'] != this.qm_token)
                 return;
+        // This was the request for which qm_request_oustanding was true
+        this.qm_request_outstanding = false;
+        // If we are not showing results, we can return
+        if(!this.qm_showing_results)
+                return;
         // Has the user already issues a new query?
         if(this.qm_has_delayed_query) {
                 this.qm_initial_request();
                 return;
         }
-        // This was the request for which qm_request_oustanding was true
-        this.qm_request_outstanding = false;
-        // qm_current_query is the query matching to this query_media_results
-        // packet except if the user stopped searching --- then it is ''
-        if(this.qm_current_query == '')
-                return;
         // If this is the first batch of results, we record the query
         // in the query history.
         if(this.qm_results_offset == 0)
@@ -702,7 +701,8 @@ PijsMarietje.prototype.on_scroll = function() {
                    $('#tabsWrapper').scrollTop() -
                    $('#tabsWrapper').height();
         if(diff <= 0) {
-                if(this.qm_has_more_results && !this.qm_request_outstanding)
+                if(this.qm_has_more_results && !this.qm_request_outstanding
+                                && this.qm_showing_results)
                         this.qm_request_more_results();
         }
 };
