@@ -238,6 +238,10 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
                 this.qm_initial_request();
                 return;
         }
+        // This was the request for which qm_request_oustanding was true
+        this.qm_request_outstanding = false;
+        // qm_current_query is the query matching to this query_media_results
+        // packet except if the user stopped searching --- then it is ''
         if(this.qm_current_query == '')
                 return;
         // If this is the first batch of results, we record the query
@@ -266,7 +270,6 @@ PijsMarietje.prototype.msg_query_media_results = function(msg) {
                 /* Add the fleuron */
                 t.append($("<tr><td colspan='2' class='fleuron'>l</td></tr>"));
         }
-        this.qm_request_outstanding = false;
         setTimeout(function() {
                 that.on_scroll();
         },0);
