@@ -84,8 +84,10 @@ channel.prototype.on_error = function(xhr, textStatus, errorThrown) {
 };
 
 var client = function(settings) {
-        this.host = 'host' in settings ? settings.host : 'localhost';
-        this.port = 'port' in settings ? settings.port : 8080;
+        this.host = 'host' in settings ? settings.host
+                                : window.location.hostname;
+        this.port = 'port' in settings ? settings.port
+                                : window.location.port;
         this.path = 'path' in settings ? settings.path : '/';
 }
 
