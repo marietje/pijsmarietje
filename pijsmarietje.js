@@ -340,10 +340,10 @@ PijsMarietje.prototype.fill_requestsTable = function() {
                 var b = (i == -1 ? this.playing.byKey
                                 : this.requests[i].byKey);
                 if(!b)
-                        b = 'marietje';
-                txt_a = m.artist;
-                txt_t = m.title;
-                ctime = (i == -1 ? 0 : ctime + m.length);
+                        b = m ? 'marietje' : "";
+                txt_a = m ? m.artist : "";
+                txt_t = m ? m.title : "(nothing playing)";
+                ctime = m ? (i == -1 ? 0 : ctime + m.length) : null;
                 tr = create_tr([b, txt_a, txt_t,
                                 (ctime == null ? '' : ctime)]);
                 $(tr).data('offset', ctime);
@@ -471,6 +471,7 @@ PijsMarietje.prototype.do_login = function(username, password) {
 
 PijsMarietje.prototype.update_times = function() {
         var that = this;
+        if (!this.playing.endTime) return;
         var diff = (this.playing.endTime
                         - new Date().getTime() / 1000.0
                         - this.playing.serverTime
