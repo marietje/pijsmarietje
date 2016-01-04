@@ -57,12 +57,16 @@ function nice_time(tmp) {
 function PijsMarietje() {
         this.after_login_cb = null;
         this.after_login_token_cb = null;
+        this.after_login_uploadServer_cb = null;
         this.uploader = null;
         this.logged_in = false;
         this.login_token = null;
         this.channel_ready = false;
         this.comet = null;
         this.channel = null;
+        this.upload_channel = null;
+        this.separate_upload_server = false;
+        this.upload_channel_logged_in = false;
         this.media = {};
         this.media_count = 0;
         
@@ -102,6 +106,7 @@ function PijsMarietje() {
         this.qmh_entries = [];
         this.qmh_index = 0;
 
+        // How to handle each message from maried
         this.msg_map = {
                 'welcome': this.msg_welcome,
                 'login_token': this.msg_login_token,
@@ -125,6 +130,8 @@ PijsMarietje.prototype.setup_joyce = function() {
         var that = this;
         this.comet = new joyceCometClient(pijsmarietje_config.server);
 
+        this.separate_upload_server = !!pijsmarietje_config.uploadServer;
+
         this.channel = this.comet.create_channel({
                 'message': function(msg) {
                         var t = msg['type'];
@@ -136,6 +143,11 @@ PijsMarietje.prototype.setup_joyce = function() {
                 }, 'ready': function() {
                         that.on_channel_ready();
                 }});
+        
+        // If we have a separate server for uploads, we will create a
+        // connection to it when we switch to the upload tab.
+        if (!this.separate_upload_server)
+                this.upload_channel = this.channel;
 };
 
 //
@@ -202,8 +214,11 @@ PijsMarietje.prototype.msg_logged_in = function(msg) {
                         return;
                 this.logged_in = true;
                 this.save_accessKey(this.username, msg['accessKey']);
-                if(this.after_login_cb != null)
+
+                if(this.after_login_cb != null) {
                         this.after_login_cb();
+                        this.after_login_cb = null;
+                }
         }
 };
 
@@ -404,11 +419,17 @@ PijsMarietje.prototype.save_accessKey = function(username, accessKey) {
         $.cookie('accessKey', accessKey, { expires: 7 });
 };
 
-PijsMarietje.prototype.on_channel_ready = function() {
-        // Create uploader
+PijsMarietje.prototype.setup_uploader = function() {
         this.uploader = new qq.FileUploader({
                 element: $('#uploader')[0],
-                action: this.channel.stream_url});
+                action: this.upload_channel.stream_url});
+};
+
+PijsMarietje.prototype.on_channel_ready = function() {
+        // Create uploader, if we don not have a separate upload server.
+        if (!this.separate_upload_server) {
+            this.setup_uploader();
+        }
 
         // Request list of media and follow updates
         this.channel.send_messages([
@@ -443,8 +464,10 @@ PijsMarietje.prototype.on_login_token = function() {
                 this.waiting_for_login_token = false;
                 $('#login-token-dialog').dialog('close');
                 this.focus_queryField();
-                if(this.after_login_token_cb != null)
+                if(this.after_login_token_cb != null) {
                         this.after_login_token_cb();
+                        this.after_login_token_cb = null;
+                }
         }
 };
 
@@ -499,6 +522,7 @@ PijsMarietje.prototype.setup_ui = function() {
         $('#tabs').tabs({
                 select: function(event, ui) {
                         that.mainTabShown = ui.index == 0;
+                        // Only show upload tab if we are logged in.
                         if(ui.panel.id == "tUpload" && !that.logged_in) {
                                 var tabs = $(this);
                                 that.after_login_cb = function() {
@@ -506,6 +530,24 @@ PijsMarietje.prototype.setup_ui = function() {
                                 };
                                 that.prepare_login();
                                 return false;
+                        // If we have a separate upload server, make sure
+                        // a connection to it is set up, before we show
+                        // the upload tab.
+                        } else if (ui.panel.id == "tUpload"
+                                        && that.separate_upload_server
+                                        && !that.upload_channel
+                                        && !that.upload_channel_logged_in) {
+                                var tabs = $(this);
+                                that.after_login_uploadServer_cb = function() {
+                                        tabs.tabs('select', "tUpload");
+                                };
+                                that.setup_upload_channel();
+                                return false;
+                        } else if (ui.panel.id == "tUpload"
+                                        && that.separate_upload_server
+                                        && that.upload_channel
+                                        && !that.upload_channel_logged_in) {
+                                return false; // we just have to wait.
                         } else if (ui.panel.id == "tMain") {
                                 that.focus_queryField();
                         }
@@ -720,6 +762,43 @@ PijsMarietje.prototype.qmh_record = function(query) {
         if(this.qmh_index < this.qmh_entries.length &&
                         this.qmh_entries[this.qmh_index] != query)
                 this.qmh_index = this.qmh_entries.length - 1;
+};
+
+PijsMarietje.prototype.setup_upload_channel = function() {
+        var that = this;
+        var upload_comet = new joyceCometClient(
+                        pijsmarietje_config.uploadServer);
+
+        this.upload_channel = this.comet.create_channel({
+                message: function(msg) {
+                        var t = msg['type'];
+                        if (t === 'error') {
+                                that.msg_error(msg);
+                        } else if (t === 'welcome') {
+                                that.upload_channel.send_message({
+                                    type: 'request_login_token' });
+                        } else if (t === 'login_token') {
+                                var tmp = that.get_accessKey();
+                                var username = tmp[0];
+                                var accessKey = tmp[1];
+                                var hash = md5(accessKey+msg.login_token);
+                                that.upload_channel.send_message({
+                                    type: 'login_accessKey',
+                                    username: username,
+                                    hash: hash});
+                        } else if (t === 'logged_in') {
+                                that.upload_channel_logged_in = true;
+                                that.setup_uploader();
+                                if (that.after_login_uploadServer_cb) {
+                                    that.after_login_uploadServer_cb();
+                                    that.after_login_uploadServer_cb = null;
+                                }
+                        } else {
+                                console.warn(["I don't know how to handle "+
+                                    "this from the uploadServer", msg]);
+                        }
+                }, ready: function() {
+                }});
 };
 
 $(document).ready(function(){

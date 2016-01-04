@@ -1,6 +1,15 @@
 var pijsmarietje_config = {
+    /* server to connect to */
     server: {
         host: 'my.domain.name',
-        port: 8080
+        port: 8080,
+    },
+
+    /* possibly different server to send uploads to */
+    uploadServer: {
+        host: 'other.machine',
+        port: 80,
+        path: '/'
     }
+
 };
