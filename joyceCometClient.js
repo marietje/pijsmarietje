@@ -30,17 +30,28 @@ channel.prototype._request = function(interrupt) {
         var url = 'http://'+this.client.host+':'+this.client.port.toString()+
                         this.client.path;
         var that = this;
-        $.ajax({'url': url,
-                'type': 'POST',
-                'data': {
-                        'm': JSON.stringify(data)
-                },
-                'dataType': 'json',
-                'error': function(xhr, textStatus, errorThrown) {
-                        that.on_error(xhr, textStatus, errorThrown);
-                }, 'success': function(data, textStatus, xhr) {
-                        that.on_success(data, textStatus, xhr);
-                }});
+        // In its eternal wisdom, Mobile Safari decides to randomly error
+        // on the first XMLHTTPRequest after reloading the page.  So,
+        // on error, we'll try once more.
+        var do_it = function(second_try) {
+            $.ajax({'url': url,
+                    'type': 'POST',
+                    'data': {
+                            'm': JSON.stringify(data)
+                    },
+                    'dataType': 'json',
+                    'error': function(xhr, textStatus, errorThrown) {
+                            if(second_try)
+                                that.on_error(xhr, textStatus, errorThrown);
+                            else
+                                // Just try a second time for Mobile Safari.
+                                do_it(true);
+                    }, 'success': function(data, textStatus, xhr) {
+                            that.on_success(data, textStatus, xhr);
+                    }});
+        };
+        do_it(false);
+
 };
 
 channel.prototype.on_success = function(data, textStatus, xhr) {
